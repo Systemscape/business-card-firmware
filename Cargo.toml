@@ -1,0 +1,52 @@
+[package]
+name = "business-card-firmware"
+version = "0.1.0"
+edition = "2021"
+resolver = "2"
+
+[dependencies]
+embassy-executor = { version = "0.10", default-features = false, features = ["platform-cortex-m", "executor-thread", "defmt", "executor-interrupt"] }
+embassy-time = { version = "0.5", default-features = false, features = ["defmt", "defmt-timestamp-uptime"] }
+embassy-nrf = { version = "0.11", default-features = false, features = ["defmt", "time-driver-rtc1", "gpiote", "unstable-pac", "rt", "nrf52810", "nfc-pins-as-gpio"] }
+embassy-futures = "0.1.1"
+embassy-sync = { version = "0.8", features = ["defmt"] }
+
+nrf-sdc = { version = "0.4", default-features = false, features = ["defmt", "peripheral", "nrf52810"] }
+nrf-mpsl = { version = "0.3", default-features = false, features = ["defmt", "critical-section-impl"] }
+bt-hci = { version = "0.9", default-features = false, features = ["defmt"] }
+trouble-host = { path = "../trouble/host", default-features = false, features = [
+    "derive",
+    "gatt",
+    "peripheral",
+    "defmt",
+    "security",
+    "serde",
+    "l2cap-rx-queue-size-4",
+    "l2cap-tx-queue-size-4",
+    "default-packet-pool-mtu-128",
+    "default-packet-pool-size-8",
+] }
+
+defmt = "1.0"
+defmt-rtt = "1.0"
+panic-probe = { version = "1.0", features = ["print-defmt"] }
+
+cortex-m = "0.7.6"
+cortex-m-rt = "0.7.0"
+static_cell = "2"
+heapless = { version = "0.9", features = ["serde"] }
+sequential-storage = { version = "7.1.0", features = ["postcard"] }
+embedded-storage-async = "0.4.1"
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+
+[patch.crates-io]
+nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
+nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
+# Low-stack-usage scalar multiplication so LESC pairing fits in 24K RAM (see primeorder-patch/)
+primeorder = { path = "primeorder-patch" }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+debug = 2

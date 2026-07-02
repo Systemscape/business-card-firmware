@@ -1,0 +1,7 @@
+# Nightly is required for -Zbuild-std and -Cpanic=immediate-abort, without
+# which the binary does not fit in the nRF52810's 192K flash.
+# Pin a dated nightly (e.g. "nightly-2026-06-15") for reproducible builds.
+[toolchain]
+channel = "nightly"
+components = ["rust-src", "rustfmt"]
+targets = ["thumbv7em-none-eabi"]

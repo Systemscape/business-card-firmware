@@ -1,0 +1,15 @@
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
+runner = "probe-rs run --chip nRF52810_xxAA"
+
+[build]
+target = "thumbv7em-none-eabi"
+# immediate-abort panics strip core::fmt panic machinery (~34K flash)
+rustflags = ["-Zunstable-options", "-Cpanic=immediate-abort"]
+
+[unstable]
+build-std = ["core"]
+
+[env]
+# trace-level trouble_host logs don't fit in flash
+DEFMT_LOG = "trouble_host=info,info"
+DEFMT_RTT_BUFFER_SIZE = "64"
