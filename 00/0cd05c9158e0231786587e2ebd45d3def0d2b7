@@ -1,0 +1,43 @@
+Cargo.lock
+  s_84738b8ae1c610::t_2ebff2422bc03c 1-1921
+primeorder-patch/CHANGELOG.md
+  s_84738b8ae1c610::t_7f316f86db2f7e 1-93
+primeorder-patch/Cargo.toml
+  s_84738b8ae1c610::t_31a97e89db29ba 1-66
+primeorder-patch/LICENSE-APACHE
+  s_84738b8ae1c610::t_6854cc4c1d6d3a 1-201
+primeorder-patch/LICENSE-MIT
+  s_84738b8ae1c610::t_b3851d495dd9d1 1-25
+primeorder-patch/README.md
+  s_84738b8ae1c610::t_a0237ed4f7318f 1-96
+primeorder-patch/src/affine.rs
+  s_84738b8ae1c610::t_c25306760f53fc 1-489
+primeorder-patch/src/dev.rs
+  s_84738b8ae1c610::t_16854cff8da457 1-157
+primeorder-patch/src/field.rs
+  s_84738b8ae1c610::t_9e1c7a222fbbeb 1-660
+primeorder-patch/src/lib.rs
+  s_84738b8ae1c610::t_1d891b7613bc76 1-53
+primeorder-patch/src/point_arithmetic.rs
+  s_84738b8ae1c610::t_86eec444de49a8 1-321
+primeorder-patch/src/projective.rs
+  s_84738b8ae1c610::t_ad7a94db507de3 1-760
+src/main.rs
+  s_84738b8ae1c610::t_e83291f8097717 1-590
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "000cd05c9158e0231786587e2ebd45d3def0d2b7",
+  "prompts": {},
+  "sessions": {
+    "s_84738b8ae1c610": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e7dcca15-3c6c-46af-9713-82b4efd10db4",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Joël Schulz-Andres <joel@systemscape.de>"
+    }
+  }
+}
