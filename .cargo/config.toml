@@ -12,4 +12,4 @@ build-std = ["core"]
 [env]
 # trace-level trouble_host logs don't fit in flash
 DEFMT_LOG = "trouble_host=info,info"
-DEFMT_RTT_BUFFER_SIZE = "64"
+DEFMT_RTT_BUFFER_SIZE = "128"

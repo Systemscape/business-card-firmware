@@ -94,7 +94,7 @@ async fn mpsl_task(mpsl: &'static MultiprotocolServiceLayer<'static>) -> ! {
 const CONNECTIONS_MAX: usize = 1;
 
 /// Max number of L2CAP channels.
-const L2CAP_CHANNELS_MAX: usize = 4;
+const L2CAP_CHANNELS_MAX: usize = 2;
 
 /// How many outgoing L2CAP buffers per link
 const L2CAP_TXQ: u8 = 3;
@@ -279,8 +279,25 @@ async fn save_bonds(storage: &mut Storage<'_>, buffer: &mut [u8], bonds: &BondTa
     }
 }
 
+fn paint_stack() {
+    extern "C" {
+        static mut __sheap: u8;
+    }
+    unsafe {
+        let sp: u32;
+        core::arch::asm!("mov {}, sp", out(reg) sp);
+        let mut p = core::ptr::addr_of_mut!(__sheap) as *mut u32;
+        let end = (sp - 128) as *mut u32;
+        while p < end {
+            p.write_volatile(0x5757_5757);
+            p = p.add(1);
+        }
+    }
+}
+
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
+    paint_stack();
     let mut config = embassy_nrf::config::Config::default();
     config.gpiote_interrupt_priority = embassy_nrf::interrupt::Priority::P2;
     config.time_interrupt_priority = embassy_nrf::interrupt::Priority::P2;
@@ -325,7 +342,7 @@ async fn main(spawner: Spawner) {
 
     let mut rng = rng::Rng::new(p.RNG, Irqs);
 
-    static SDC_MEM: StaticCell<sdc::Mem<1512>> = StaticCell::new();
+    static SDC_MEM: StaticCell<sdc::Mem<1560>> = StaticCell::new();
     let sdc_mem = SDC_MEM.init(sdc::Mem::new());
     let sdc = unwrap!(build_sdc(sdc_p, &mut rng, mpsl, sdc_mem));
 
@@ -334,7 +351,7 @@ async fn main(spawner: Spawner) {
     let flash = FLASH.init(Flash::take(mpsl, p.NVMC));
     let mut map_storage: Storage =
         MapStorage::new(flash, MapConfig::new(storage_range()), NoCache::new());
-    let mut data_buffer = [0; 1024];
+    let mut data_buffer = [0; 640];
 
     // Init I2C after MPSL/SDC setup to avoid interrupt conflicts
     let twim_config = twim::Config::default();
@@ -358,7 +375,7 @@ async fn main(spawner: Spawner) {
     let address: Address = Address::random([0xff, 0x8f, 0x1a, 0x05, 0xe4, 0xfe]);
     info!("Our address = {:?}", address);
 
-    let mut resources: HostResources<_, DefaultPacketPool, CONNECTIONS_MAX, L2CAP_CHANNELS_MAX> =
+    let mut resources: HostResources<_, DefaultPacketPool, CONNECTIONS_MAX, L2CAP_CHANNELS_MAX, 1, MAX_BONDS> =
         HostResources::new();
     let stack = trouble_host::new(sdc, &mut resources)
         .set_random_address(address)
@@ -501,22 +518,25 @@ async fn connection_task(
                     bond,
                 } => {
                     info!("[gatt] link encrypted: {:?}", security_level);
-                    if let Some(bond) = bond {
-                        active_identity = Some(bond.identity);
-                        bonds.touch(&bond.identity);
+                    // `bond` is only populated on fresh pairing; on bonded
+                    // re-encryption look the peer up by identity instead.
+                    let identity = bond
+                        .map(|b| b.identity)
+                        .unwrap_or_else(|| conn.raw().peer_identity());
+                    if let Some(entry) = bonds.find(&identity) {
+                        active_identity = Some(identity);
                         // Restore the CCCD state this bonded central set up in a
                         // previous connection (bonded centrals don't re-subscribe).
-                        if let Some(entry) = bonds.find(&bond.identity) {
-                            if !entry.cccd.is_empty() {
-                                match ClientAttTableView::try_from_raw(&entry.cccd) {
-                                    Ok(view) => {
-                                        server.set_client_att_table(conn.raw(), &view);
-                                        info!("[gatt] restored client att table");
-                                    }
-                                    Err(_) => warn!("[gatt] stored client att table invalid"),
+                        if !entry.cccd.is_empty() {
+                            match ClientAttTableView::try_from_raw(&entry.cccd) {
+                                Ok(view) => {
+                                    server.set_client_att_table(conn.raw(), &view);
+                                    info!("[gatt] restored client att table");
                                 }
+                                Err(_) => warn!("[gatt] stored client att table invalid"),
                             }
                         }
+                        bonds.touch(&identity);
                     }
                 }
                 GattConnectionEvent::Gatt { event } => {

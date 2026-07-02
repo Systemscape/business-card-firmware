@@ -20,11 +20,13 @@ trouble-host = { path = "../trouble/host", default-features = false, features = 
     "peripheral",
     "defmt",
     "security",
+    "security-p256-cortex-m4",
     "serde",
-    "l2cap-rx-queue-size-4",
-    "l2cap-tx-queue-size-4",
+    "l2cap-rx-queue-size-2",
+    "l2cap-tx-queue-size-2",
     "default-packet-pool-mtu-128",
-    "default-packet-pool-size-8",
+    "default-packet-pool-size-4",
+    "client-att-table-size-16",
 ] }
 
 defmt = "1.0"
@@ -44,6 +46,11 @@ nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc
 nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
 # Low-stack-usage scalar multiplication so LESC pairing fits in 24K RAM (see primeorder-patch/)
 primeorder = { path = "primeorder-patch" }
+
+# opt-level z merges async poll-stack frames aggressively; trouble-host's runner
+# frame gets so large that SMP + ECDH + radio IRQs overflow the 24K RAM stack.
+[profile.release.package.trouble-host]
+opt-level = 2
 
 [profile.release]
 opt-level = "z"
