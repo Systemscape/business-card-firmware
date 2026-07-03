@@ -44,8 +44,6 @@ serde = { version = "1.0", default-features = false, features = ["derive"] }
 [patch.crates-io]
 nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
 nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
-# Low-stack-usage scalar multiplication so LESC pairing fits in 24K RAM (see primeorder-patch/)
-primeorder = { path = "primeorder-patch" }
 
 # opt-level z merges async poll-stack frames aggressively; trouble-host's runner
 # frame gets so large that SMP + ECDH + radio IRQs overflow the 24K RAM stack.
