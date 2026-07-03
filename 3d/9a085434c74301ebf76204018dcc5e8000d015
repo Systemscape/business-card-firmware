@@ -1,0 +1,21 @@
+src/main.rs
+  s_84738b8ae1c610::t_b3a8e8cfec6873 378-385
+Cargo.lock
+  s_84738b8ae1c610::t_e7b9a9c9909abd 1346-1347
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "3d9a085434c74301ebf76204018dcc5e8000d015",
+  "prompts": {},
+  "sessions": {
+    "s_84738b8ae1c610": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e7dcca15-3c6c-46af-9713-82b4efd10db4",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Joël Schulz-Andres <joel@systemscape.de>"
+    }
+  }
+}
