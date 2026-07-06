@@ -1751,6 +1751,7 @@ dependencies = [
 [[package]]
 name = "trouble-host"
 version = "0.7.0"
+source = "git+https://github.com/joelsa/trouble-fork?rev=b687e46c367a05ada05e0b1696f74c866e9df14b#b687e46c367a05ada05e0b1696f74c866e9df14b"
 dependencies = [
  "aes",
  "bt-hci",
@@ -1776,6 +1777,7 @@ dependencies = [
 [[package]]
 name = "trouble-host-macros"
 version = "0.5.0"
+source = "git+https://github.com/joelsa/trouble-fork?rev=b687e46c367a05ada05e0b1696f74c866e9df14b#b687e46c367a05ada05e0b1696f74c866e9df14b"
 dependencies = [
  "convert_case",
  "darling",

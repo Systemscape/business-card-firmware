@@ -14,7 +14,7 @@ embassy-sync = { version = "0.8", features = ["defmt"] }
 nrf-sdc = { version = "0.4", default-features = false, features = ["defmt", "peripheral", "nrf52810"] }
 nrf-mpsl = { version = "0.3", default-features = false, features = ["defmt", "critical-section-impl"] }
 bt-hci = { version = "0.9", default-features = false, features = ["defmt"] }
-trouble-host = { path = "../trouble/host", default-features = false, features = [
+trouble-host = { git = "https://github.com/joelsa/trouble-fork", rev = "b687e46c367a05ada05e0b1696f74c866e9df14b", default-features = false, features = [
     "derive",
     "gatt",
     "peripheral",
