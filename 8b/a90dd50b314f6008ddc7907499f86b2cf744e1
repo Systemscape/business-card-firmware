@@ -1,0 +1,21 @@
+Cargo.toml
+  s_f1780c0f4edc65::t_48ba353eb60b2e 17
+Cargo.lock
+  s_f1780c0f4edc65::t_031fdd15f57642 1754,1780
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8ba90dd50b314f6008ddc7907499f86b2cf744e1",
+  "prompts": {},
+  "sessions": {
+    "s_f1780c0f4edc65": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "495a57b6-d948-4087-8b7a-34929883f1fe",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Joël Schulz-Andres <joel@systemscape.de>"
+    }
+  }
+}
