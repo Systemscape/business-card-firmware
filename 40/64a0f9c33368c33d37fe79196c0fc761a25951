@@ -1,0 +1,21 @@
+Cargo.toml
+  s_3fd74b8daff8c4::t_958b98af7b19c1 16-17,45-46
+Cargo.lock
+  s_3fd74b8daff8c4::t_a9a78bd82447aa 110,112,114,125-135,1145,1162,1181,1184,1199,1767,1793
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "4064a0f9c33368c33d37fe79196c0fc761a25951",
+  "prompts": {},
+  "sessions": {
+    "s_3fd74b8daff8c4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8924bf73-252c-4dd8-bfa0-dfe3978de144",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joël Schulz-Andres <joel@systemscape.de>"
+    }
+  }
+}
