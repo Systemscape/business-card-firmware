@@ -13,8 +13,8 @@ embassy-sync = { version = "0.8", features = ["defmt"] }
 
 nrf-sdc = { version = "0.4", default-features = false, features = ["defmt", "peripheral", "nrf52810"] }
 nrf-mpsl = { version = "0.3", default-features = false, features = ["defmt", "critical-section-impl"] }
-bt-hci = { version = "0.9", default-features = false, features = ["defmt"] }
-trouble-host = { git = "https://github.com/joelsa/trouble-fork", rev = "b687e46c367a05ada05e0b1696f74c866e9df14b", default-features = false, features = [
+bt-hci = { version = "0.10", default-features = false, features = ["defmt"] }
+trouble-host = { git = "https://github.com/embassy-rs/trouble", rev = "ff0aa1a21b73e0b82b97230aebcef14c3d7d0fbf", default-features = false, features = [
     "derive",
     "gatt",
     "peripheral",
@@ -42,8 +42,8 @@ embedded-storage-async = "0.4.1"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 
 [patch.crates-io]
-nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
-nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
+nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "1a6e661155cdd1d6a86f3ae7b7fb117343781533" }
+nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "1a6e661155cdd1d6a86f3ae7b7fb117343781533" }
 
 # opt-level z merges async poll-stack frames aggressively; trouble-host's runner
 # frame gets so large that SMP + ECDH + radio IRQs overflow the 24K RAM stack.

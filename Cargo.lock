@@ -107,10 +107,11 @@ dependencies = [
 
 [[package]]
 name = "bt-hci"
-version = "0.9.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f3c66fd0a41a3b3a5906847b1bf5516048ce083e24fa9341a0fa31d3b4cd73d"
+checksum = "f63b3d6f0ef006d9b87a075705d6c142b03681ad34090659647f0e227c1c667f"
 dependencies = [
+ "bt-hci-transport",
  "btuuid",
  "defmt 1.1.0",
  "embassy-sync",
@@ -119,6 +120,17 @@ dependencies = [
  "futures-intrusive",
  "heapless 0.9.3",
  "serde",
+]
+
+[[package]]
+name = "bt-hci-transport"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ffb9819c69cf88877f5eebc8c5ade0ab50f2bf9475bbb3eb714d66c55b0cb64"
+dependencies = [
+ "defmt 1.1.0",
+ "embedded-io 0.7.1",
+ "embedded-io-async 0.7.0",
 ]
 
 [[package]]
@@ -1130,7 +1142,7 @@ dependencies = [
 [[package]]
 name = "nrf-mpsl"
 version = "0.3.0"
-source = "git+https://github.com/alexmoon/nrf-sdc.git?rev=abe49d22ebfc85fae134eb082fbfddf752016a55#abe49d22ebfc85fae134eb082fbfddf752016a55"
+source = "git+https://github.com/alexmoon/nrf-sdc.git?rev=1a6e661155cdd1d6a86f3ae7b7fb117343781533#1a6e661155cdd1d6a86f3ae7b7fb117343781533"
 dependencies = [
  "cfg-if",
  "cortex-m",
@@ -1147,7 +1159,7 @@ dependencies = [
 [[package]]
 name = "nrf-mpsl-sys"
 version = "0.2.1"
-source = "git+https://github.com/alexmoon/nrf-sdc.git?rev=abe49d22ebfc85fae134eb082fbfddf752016a55#abe49d22ebfc85fae134eb082fbfddf752016a55"
+source = "git+https://github.com/alexmoon/nrf-sdc.git?rev=1a6e661155cdd1d6a86f3ae7b7fb117343781533#1a6e661155cdd1d6a86f3ae7b7fb117343781533"
 dependencies = [
  "bindgen",
  "doxygen-rs",
@@ -1166,9 +1178,10 @@ dependencies = [
 [[package]]
 name = "nrf-sdc"
 version = "0.4.0"
-source = "git+https://github.com/alexmoon/nrf-sdc.git?rev=abe49d22ebfc85fae134eb082fbfddf752016a55#abe49d22ebfc85fae134eb082fbfddf752016a55"
+source = "git+https://github.com/alexmoon/nrf-sdc.git?rev=1a6e661155cdd1d6a86f3ae7b7fb117343781533#1a6e661155cdd1d6a86f3ae7b7fb117343781533"
 dependencies = [
  "bt-hci",
+ "bt-hci-transport",
  "critical-section",
  "defmt 1.1.0",
  "embassy-nrf",
@@ -1183,7 +1196,7 @@ dependencies = [
 [[package]]
 name = "nrf-sdc-sys"
 version = "0.2.1"
-source = "git+https://github.com/alexmoon/nrf-sdc.git?rev=abe49d22ebfc85fae134eb082fbfddf752016a55#abe49d22ebfc85fae134eb082fbfddf752016a55"
+source = "git+https://github.com/alexmoon/nrf-sdc.git?rev=1a6e661155cdd1d6a86f3ae7b7fb117343781533#1a6e661155cdd1d6a86f3ae7b7fb117343781533"
 dependencies = [
  "bindgen",
  "doxygen-rs",
@@ -1751,7 +1764,7 @@ dependencies = [
 [[package]]
 name = "trouble-host"
 version = "0.7.0"
-source = "git+https://github.com/joelsa/trouble-fork?rev=b687e46c367a05ada05e0b1696f74c866e9df14b#b687e46c367a05ada05e0b1696f74c866e9df14b"
+source = "git+https://github.com/embassy-rs/trouble?rev=ff0aa1a21b73e0b82b97230aebcef14c3d7d0fbf#ff0aa1a21b73e0b82b97230aebcef14c3d7d0fbf"
 dependencies = [
  "aes",
  "bt-hci",
@@ -1777,7 +1790,7 @@ dependencies = [
 [[package]]
 name = "trouble-host-macros"
 version = "0.5.0"
-source = "git+https://github.com/joelsa/trouble-fork?rev=b687e46c367a05ada05e0b1696f74c866e9df14b#b687e46c367a05ada05e0b1696f74c866e9df14b"
+source = "git+https://github.com/embassy-rs/trouble?rev=ff0aa1a21b73e0b82b97230aebcef14c3d7d0fbf#ff0aa1a21b73e0b82b97230aebcef14c3d7d0fbf"
 dependencies = [
  "convert_case",
  "darling",

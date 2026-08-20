@@ -376,7 +376,6 @@ async fn main(spawner: Spawner) {
     info!("Our address = {:?}", address);
 
     let mut resources: HostResources<
-        _,
         DefaultPacketPool,
         CONNECTIONS_MAX,
         L2CAP_CHANNELS_MAX,
