@@ -1,0 +1,26 @@
+README.md
+  s_507bcf54818929::t_c7422e0b8a693c 2-7
+  s_507bcf54818929::t_02c0c504a271a6 1
+Cargo.toml
+  s_507bcf54818929::t_c02455ac047de9 15
+LICENSE
+  s_507bcf54818929::t_c7422e0b8a693c 1-21
+Cargo.lock
+  s_507bcf54818929::t_1b6b08f96efe0b 1144-1146,1162-1164,1183-1184,1201-1203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "719f680d2e3d141fb9832ffc53f53f5d8fa3bd53",
+  "prompts": {},
+  "sessions": {
+    "s_507bcf54818929": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bed3c0ee-a0bb-4340-a869-08b423baab08",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Joël Schulz-Andres <joel@systemscape.de>"
+    }
+  }
+}
