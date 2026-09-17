@@ -9,6 +9,12 @@
 //! Up to [`MAX_BONDS`] peers are remembered; the least recently used bond is
 //! evicted when a new peer pairs.
 //!
+//! The LED blinks while advertising (open for connections/bonding) and is
+//! solid while connected. Holding volume up + mute for [`DISCONNECT_HOLD`]
+//! drops the current connection and returns to advertising; for
+//! [`PAIRING_WINDOW`] the dropped peer is refused so another device gets a
+//! chance to connect and pair.
+//!
 //! Build with `just build`, flash with `just run` (see justfile).
 #![no_std]
 #![no_main]
@@ -18,13 +24,13 @@ use core::ops::Range;
 use defmt::{info, unwrap, warn};
 use embassy_executor::Spawner;
 use embassy_futures::join::join;
-use embassy_futures::select::{select, Either};
+use embassy_futures::select::{select, select3, Either, Either3};
 use embassy_nrf::gpio::{Input, Level, Output, OutputDrive, Pull};
 use embassy_nrf::mode::Async;
 use embassy_nrf::peripherals::RNG;
 use embassy_nrf::twim::{self, Twim};
 use embassy_nrf::{bind_interrupts, rng};
-use embassy_time::{Duration, Timer};
+use embassy_time::{Duration, Instant, Timer};
 use nrf_sdc::mpsl::{Flash, MultiprotocolServiceLayer};
 use nrf_sdc::{self as sdc, mpsl};
 use sequential_storage::cache::NoCache;
@@ -110,6 +116,26 @@ const QT1070_ADDR: u8 = 0x1B;
 
 // AT42QT1070 registers
 const QT1070_REG_DET_STATUS: u8 = 0x02;
+// AVE/AKS register for key 0; keys 1-6 follow. Bits 1:0 hold the AKS group.
+const QT1070_REG_AVE_AKS: u8 = 0x27;
+const QT1070_AKS_MASK: u8 = 0x03;
+
+// AT42QT1070 key indices
+const KEY_VOLUME_UP: u8 = 0;
+const KEY_MUTE: u8 = 4;
+
+/// Key Status bitmask that, when held for [`DISCONNECT_HOLD`], drops the
+/// current connection so another central can connect.
+const DISCONNECT_COMBO: u8 = (1 << KEY_VOLUME_UP) | (1 << KEY_MUTE);
+const DISCONNECT_HOLD: Duration = Duration::from_secs(3);
+
+/// How long the peer dropped via [`DISCONNECT_COMBO`] is refused so that a
+/// different device can connect. Bonded hosts reconnect within a second
+/// otherwise.
+const PAIRING_WINDOW: Duration = Duration::from_secs(60);
+
+/// LED toggle interval while advertising
+const ADV_BLINK_INTERVAL: Duration = Duration::from_millis(500);
 
 // Consumer Control HID Report Descriptor: single 16-bit usage value for media keys
 static REPORT_MAP: [u8; 23] = [
@@ -342,7 +368,7 @@ async fn main(spawner: Spawner) {
 
     let mut rng = rng::Rng::new(p.RNG, Irqs);
 
-    static SDC_MEM: StaticCell<sdc::Mem<1560>> = StaticCell::new();
+    static SDC_MEM: StaticCell<sdc::Mem<1576>> = StaticCell::new();
     let sdc_mem = SDC_MEM.init(sdc::Mem::new());
     let sdc = unwrap!(build_sdc(sdc_p, &mut rng, mpsl, sdc_mem));
 
@@ -371,6 +397,8 @@ async fn main(spawner: Spawner) {
         Ok(_) => info!("AT42QT1070 chip ID: {:#04x}", chip_id[0]),
         Err(e) => warn!("AT42QT1070 read failed: {:?}", defmt::Debug2Format(&e)),
     }
+    qt1070_disable_aks(&mut i2c, KEY_VOLUME_UP).await;
+    qt1070_disable_aks(&mut i2c, KEY_MUTE).await;
 
     let address: Address = Address::random([0xff, 0x8f, 0x1a, 0x05, 0xe4, 0xfe]);
     info!("Our address = {:?}", address);
@@ -407,15 +435,34 @@ async fn main(spawner: Spawner) {
         }
     )));
 
-    // Flash LED to indicate ready
-    led.set_low();
-    Timer::after(Duration::from_millis(200)).await;
-    led.set_high();
+    // Peer refused while the pairing window is open, see PAIRING_WINDOW.
+    let mut refused: Option<(Identity, Instant)> = None;
 
     let _ = join(ble_task(runner), async {
         loop {
-            match advertise(DEVICE_NAME, &mut peripheral, &server).await {
+            // Blink while advertising; the blink future is dropped once a
+            // central connects or advertising fails.
+            let result = match select(
+                advertise(DEVICE_NAME, &mut peripheral, &server),
+                blink_led(&mut led),
+            )
+            .await
+            {
+                Either::First(result) => result,
+                Either::Second(never) => never,
+            };
+            match result {
                 Ok(conn) => {
+                    if let Some((identity, since)) = refused {
+                        if since.elapsed() >= PAIRING_WINDOW {
+                            refused = None;
+                        } else if identity.match_identity(&conn.raw().peer_identity()) {
+                            info!("[adv] refusing {:?} during pairing window", identity);
+                            conn.raw().disconnect();
+                            wait_disconnected(&conn).await;
+                            continue;
+                        }
+                    }
                     if let Err(e) = conn.raw().set_bondable(true) {
                         warn!("Failed to set bondable: {:?}", e);
                     }
@@ -426,7 +473,7 @@ async fn main(spawner: Spawner) {
 
                     // LED on while connected
                     led.set_low();
-                    connection_task(
+                    let outcome = connection_task(
                         &server,
                         &conn,
                         &mut map_storage,
@@ -437,6 +484,15 @@ async fn main(spawner: Spawner) {
                     )
                     .await;
                     led.set_high();
+
+                    match outcome {
+                        ConnectionOutcome::ComboDisconnect => {
+                            refused = Some((conn.raw().peer_identity(), Instant::now()));
+                        }
+                        // A different peer got through, the window did its job.
+                        ConnectionOutcome::Closed { encrypted: true } => refused = None,
+                        ConnectionOutcome::Closed { encrypted: false } => {}
+                    }
                 }
                 Err(e) => {
                     warn!("[adv] error: {:?}", defmt::Debug2Format(&e));
@@ -446,6 +502,57 @@ async fn main(spawner: Spawner) {
         }
     })
     .await;
+}
+
+/// Take `key` out of its adjacent key suppression group so it is reported
+/// together with other keys. All keys share AKS group 1 after reset, which
+/// would make [`DISCONNECT_COMBO`] impossible to detect.
+async fn qt1070_disable_aks(i2c: &mut Twim<'_>, key: u8) {
+    let reg = QT1070_REG_AVE_AKS + key;
+    let mut current = [0u8; 1];
+    if let Err(e) = i2c.write_read(QT1070_ADDR, &[reg], &mut current).await {
+        warn!(
+            "[qt1070] AVE/AKS read failed: {:?}",
+            defmt::Debug2Format(&e)
+        );
+        return;
+    }
+    let updated = current[0] & !QT1070_AKS_MASK;
+    match i2c.write(QT1070_ADDR, &[reg, updated]).await {
+        Ok(()) => info!(
+            "[qt1070] key {} AVE/AKS {:#04x} -> {:#04x}",
+            key, current[0], updated
+        ),
+        Err(e) => warn!(
+            "[qt1070] AVE/AKS write failed: {:?}",
+            defmt::Debug2Format(&e)
+        ),
+    }
+}
+
+async fn wait_disconnected(conn: &GattConnection<'_, '_, DefaultPacketPool>) {
+    loop {
+        if let GattConnectionEvent::Disconnected { reason } = conn.next().await {
+            info!("[gatt] disconnected: {:?}", reason);
+            break;
+        }
+    }
+}
+
+async fn blink_led(led: &mut Output<'_>) -> ! {
+    loop {
+        led.toggle();
+        Timer::after(ADV_BLINK_INTERVAL).await;
+    }
+}
+
+/// Resolves once the disconnect combo has been held long enough; never
+/// resolves while it is not held.
+async fn disconnect_hold_expired(held_since: Option<Instant>) {
+    match held_since {
+        Some(since) => Timer::at(since + DISCONNECT_HOLD).await,
+        None => core::future::pending().await,
+    }
 }
 
 async fn ble_task<C: Controller, P: PacketPool>(mut runner: Runner<'_, C, P>) {
@@ -485,6 +592,14 @@ async fn advertise<'values, 'server, C: Controller>(
     Ok(conn)
 }
 
+enum ConnectionOutcome {
+    /// Peer closed the link (or it dropped). `encrypted` tells whether the
+    /// link reached an encrypted state, i.e. a bonded/paired peer was on it.
+    Closed { encrypted: bool },
+    /// Link dropped on purpose because [`DISCONNECT_COMBO`] was held.
+    ComboDisconnect,
+}
+
 /// Handle GATT events and touch input until the connection closes.
 async fn connection_task(
     server: &Server<'_>,
@@ -494,12 +609,20 @@ async fn connection_task(
     bonds: &mut BondTable,
     i2c: &mut Twim<'_>,
     change_pin: &mut Input<'_>,
-) {
+) -> ConnectionOutcome {
     let input_report = &server.hid_service.input_report;
     let mut active_identity: Option<Identity> = None;
+    let mut combo_held_since: Option<Instant> = None;
+    let mut combo_disconnect = false;
     loop {
-        match select(conn.next(), change_pin.wait_for_low()).await {
-            Either::First(event) => match event {
+        match select3(
+            conn.next(),
+            change_pin.wait_for_low(),
+            disconnect_hold_expired(combo_held_since),
+        )
+        .await
+        {
+            Either3::First(event) => match event {
                 GattConnectionEvent::Disconnected { reason } => {
                     info!("[gatt] disconnected: {:?}", reason);
                     break;
@@ -564,7 +687,7 @@ async fn connection_task(
                 }
                 _ => (),
             },
-            Either::Second(_) => {
+            Either3::Second(_) => {
                 // NCHANGE went low — read Detection Status + Key Status (2 bytes
                 // starting at register 0x02). Both must be read to clear NCHANGE.
                 let mut buf = [0u8; 2];
@@ -578,6 +701,15 @@ async fn connection_task(
                 }
 
                 let keys = buf[1] & 0x3F; // Key Status is second byte, mask to keys 0-5
+                info!("[qt1070] key status {:#04x}", keys);
+
+                if keys == DISCONNECT_COMBO {
+                    if combo_held_since.is_none() {
+                        combo_held_since = Some(Instant::now());
+                    }
+                    continue;
+                }
+                combo_held_since = None;
 
                 if keys != 0 {
                     let key_idx = keys.trailing_zeros() as u8;
@@ -596,6 +728,12 @@ async fn connection_task(
                     }
                 }
             }
+            Either3::Third(()) => {
+                info!("[qt1070] disconnect combo held, dropping connection");
+                combo_held_since = None;
+                combo_disconnect = true;
+                conn.raw().disconnect();
+            }
         }
     }
 
@@ -610,6 +748,14 @@ async fn connection_task(
                     save_bonds(map_storage, data_buffer, bonds).await;
                 }
             }
+        }
+    }
+
+    if combo_disconnect {
+        ConnectionOutcome::ComboDisconnect
+    } else {
+        ConnectionOutcome::Closed {
+            encrypted: active_identity.is_some(),
         }
     }
 }
