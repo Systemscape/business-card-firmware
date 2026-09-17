@@ -1,0 +1,14 @@
+justfile
+  h_266fe4f058ae1a 3-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "238c74ca5f5c7816bce72f3d09c4a3123ec3e8a5",
+  "prompts": {},
+  "humans": {
+    "h_266fe4f058ae1a": {
+      "author": "Joël Schulz-Andres <joel@systemscape.de>"
+    }
+  }
+}
