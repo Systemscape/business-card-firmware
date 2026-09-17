@@ -1,5 +1,8 @@
 # BLE HID business card firmware (nRF52810)
 
+default:
+    @just --list
+
 # Build the firmware
 build:
     cargo build --release
