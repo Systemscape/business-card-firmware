@@ -234,6 +234,10 @@ fn build_sdc<'d, const N: usize>(
 /// Number of bonded peers remembered across power cycles.
 const MAX_BONDS: usize = 4;
 
+// Trouble stores the new LTK before PairingComplete lets us evict an old bond.
+// Keep one staging slot for the single connection, without changing flash data.
+const HOST_BONDS_MAX: usize = MAX_BONDS + CONNECTIONS_MAX;
+
 #[derive(Serialize, Deserialize)]
 struct BondEntry {
     bond: BondInformation,
@@ -248,6 +252,34 @@ impl<'a> PostcardValue<'a> for BondTable {}
 const BONDS_KEY: u8 = 0;
 
 impl BondTable {
+    /// Restore the stack from completed bonds between connections. This also
+    /// discards evicted bonds and keys left by failed or non-bonding pairings,
+    /// so the staging slot is available for the next peer.
+    fn sync_stack<C: Controller, P: PacketPool>(&self, stack: &Stack<'_, C, P>) {
+        loop {
+            // Release the stack's immutable borrow before removing the entry.
+            let stale = stack.with_bond_information(|active| {
+                active
+                    .iter()
+                    .find(|bond| {
+                        !self
+                            .0
+                            .iter()
+                            .any(|entry| entry.bond.identity.match_identity(&bond.identity))
+                    })
+                    .map(|bond| bond.identity)
+            });
+            match stale {
+                Some(identity) => unwrap!(stack.remove_bond_information(identity)),
+                None => break,
+            }
+        }
+        // Also restore the old key if an existing peer abandoned re-pairing.
+        for entry in self.0.iter() {
+            unwrap!(stack.add_bond_information(entry.bond.clone()));
+        }
+    }
+
     fn find(&mut self, identity: &Identity) -> Option<&mut BondEntry> {
         self.0
             .iter_mut()
@@ -408,7 +440,7 @@ async fn main(spawner: Spawner) {
         CONNECTIONS_MAX,
         L2CAP_CHANNELS_MAX,
         1,
-        MAX_BONDS,
+        HOST_BONDS_MAX,
     > = HostResources::new();
     let stack = trouble_host::new(sdc, &mut resources)
         .set_random_address(address)
@@ -420,9 +452,6 @@ async fn main(spawner: Spawner) {
         _ => BondTable::default(),
     };
     info!("[bond] {} bond(s) loaded from flash", bonds.0.len());
-    for entry in bonds.0.iter() {
-        unwrap!(stack.add_bond_information(entry.bond.clone()));
-    }
 
     let runner = stack.runner();
     let mut peripheral = stack.peripheral();
@@ -440,6 +469,7 @@ async fn main(spawner: Spawner) {
 
     let _ = join(ble_task(runner), async {
         loop {
+            bonds.sync_stack(&stack);
             // Blink while advertising; the blink future is dropped once a
             // central connects or advertising fails.
             let result = match select(
