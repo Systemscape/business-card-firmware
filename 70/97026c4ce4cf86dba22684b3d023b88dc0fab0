@@ -1,0 +1,25 @@
+scripts/flash_precompiled.py
+  s_9876e7ae7b31ca::t_97c4494b39e329 1-111
+README.md
+  s_9876e7ae7b31ca::t_97c4494b39e329 5-36
+justfile
+  s_9876e7ae7b31ca::t_97c4494b39e329 14-17
+tests/test_flash_precompiled.py
+  s_9876e7ae7b31ca::t_d60de428ffe604 1-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7097026c4ce4cf86dba22684b3d023b88dc0fab0",
+  "prompts": {},
+  "sessions": {
+    "s_9876e7ae7b31ca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a154f1-7b31-7253-be37-284d461364e4",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Joël Schulz-Andres <joel@systemscape.de>"
+    }
+  }
+}
